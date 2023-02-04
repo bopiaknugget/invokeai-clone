@@ -36,9 +36,10 @@ classifiers = [
 dependencies = [
   "accelerate",
   "albumentations",
-  "clip_anytorch",          # replacing "clip @ https://github.com/openai/CLIP/archive/eaa22acb90a5876642d0507623e859909230a52d.zip",
+  "clip_anytorch",
   "datasets",
-  "diffusers[torch]~=0.11",
+  "diffusers[torch]==0.11; sys_platform=='darwin'",
+  "diffusers[torch]~=0.11; sys_platform!='darwin'",
   "dnspython==2.2.1",
   "einops",
   "eventlet",
@@ -52,7 +53,7 @@ dependencies = [
   "huggingface-hub>=0.11.1",
   "imageio",
   "imageio-ffmpeg",
-  "k-diffusion",              # replacing "k-diffusion @ https://github.com/Birch-san/k-diffusion/archive/refs/heads/mps.zip",
+  "k-diffusion",
   "kornia",
   "npyscreen",
   "numpy<1.24",
@@ -77,7 +78,8 @@ dependencies = [
   "torch-fidelity",
   "torchvision>=0.14.1",
   "torchmetrics",
-  "transformers~=4.25",
+  "transformers~=4.25; sys_platform!='darwin'",
+  "transformers==4.25; sys_platform=='darwin'",
   "windows-curses; sys_platform=='win32'",
 ]
 
