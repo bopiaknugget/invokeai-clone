@@ -110,9 +110,9 @@ class GraphInvocation(BaseInvocation):
     # TODO: figure out how to create a default here
     graph: 'Graph' = Field(description="The graph to run", default=None)
 
-    def invoke(self, services: InvocationServices, session_id: str) -> Union[GraphInvocationOutput, None]:
+    def invoke(self, services: InvocationServices, session_id: str) -> GraphInvocationOutput:
         """Invoke with provided services and return outputs."""
-        pass
+        return GraphInvocationOutput()
 
 
 class IterateInvocationOutput(BaseInvocationOutput):
@@ -318,14 +318,15 @@ class Graph(BaseModel):
         edges = list()
 
         # Return any input edges that appear in this graph
-        edges.extend([e[1] for e in self.edges if e[0].node_id == node_path and e[0].field == field])
+        edges.extend([e for e in self.edges if e[0].node_id == node_path and e[0].field == field])
 
         node_id = node_path if '.' not in node_path else node_path[:node_path.index('.')]
         node = self.nodes[node_id]
 
         if isinstance(node, GraphInvocation):
             graph = node.graph
-            edges.extend(graph._get_output_edges(node_path[(len(node_id)+1):], field))
+            graph_edges = graph._get_output_edges(node_path[(len(node_id)+1):], field)
+            edges.extend(((EdgeConnection(node_id = f'{node_id}.{e[0].node_id}', field = e[0].field), EdgeConnection(node_id = f'{node_id}.{e[1].node_id}', field = e[1].field)) for e in graph_edges))
         
         return edges
 
@@ -334,7 +335,7 @@ class Graph(BaseModel):
 
     def _is_iterator_connection_valid(self, node_path: str, new_input: Optional[EdgeConnection] = None, new_output: Optional[EdgeConnection] = None) -> bool:
         inputs = list([e[0] for e in self._get_input_edges(node_path, 'collection')])
-        outputs = list([e[0] for e in self._get_output_edges(node_path, 'item')])
+        outputs = list([e[1] for e in self._get_output_edges(node_path, 'item')])
 
         if new_input is not None:
             inputs.append(new_input)
@@ -362,7 +363,7 @@ class Graph(BaseModel):
 
     def _is_collector_connection_valid(self, node_path: str, new_input: Optional[EdgeConnection] = None, new_output: Optional[EdgeConnection] = None) -> bool:
         inputs = list([e[0] for e in self._get_input_edges(node_path, 'item')])
-        outputs = list([e for e in self._get_output_edges(node_path, 'collection')])
+        outputs = list([e[1] for e in self._get_output_edges(node_path, 'collection')])
 
         if new_input is not None:
             inputs.append(new_input)
