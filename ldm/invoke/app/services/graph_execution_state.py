@@ -444,7 +444,7 @@ class GraphExecutionState(BaseModel):
     # Map of original nodes to prepared nodes
     source_prepared_mapping: dict[str, set[str]] = Field(description="The map of original graph nodes to prepared nodes", default_factory=dict)
 
-    def next(self) -> BaseInvocation:
+    def next(self) -> BaseInvocation | None:
         """Gets the next node ready to execute."""
 
         # TODO: enable multiple nodes to execute simultaneously by tracking currently executing nodes
@@ -485,11 +485,6 @@ class GraphExecutionState(BaseModel):
 
         if all([n in self.executed for n in prepared_nodes]):
             self.executed.add(source_node)
-
-    def _get_node_iteration(self, node_id: str, iterations: Optional[set[str]] = None) -> str:
-        prepared_nodes = self.source_prepared_mapping[node_id]
-        # TODO: Throw if this returns none?
-        return next(n for n in prepared_nodes if iterations is None or self.prepared_node_iterations[n].issubset(iterations)) # TODO: `self.prepared_node_iterations` doesn't exist
 
     def _create_execution_node(self, node_path: str, iteration_node_map: list[tuple[str, str]]) -> list[str]:
         """Prepares an iteration node and connects all edges, returning the new node id"""
@@ -560,7 +555,7 @@ class GraphExecutionState(BaseModel):
         return g
 
 
-    def _get_node_iterators(self, node_id: str) -> list[IterateInvocation]:
+    def _get_node_iterators(self, node_id: str) -> list[str]:
         """Gets iterators for a node"""
         g = self._iterator_graph()
         iterators = [n for n in nx.ancestors(g, node_id) if isinstance(self.graph.nodes[n], IterateInvocation)]
@@ -600,6 +595,7 @@ class GraphExecutionState(BaseModel):
 
             # Select the correct prepared parents for each iteration
             # For every iterator, the parent must either not be a child of that iterator, or must match the prepared iteration for that iterator
+            # TODO: Handle a node mapping to none
             eg = self.execution_graph.nx_graph_flat()
             prepared_parent_mappings = [[(n,self._get_iteration_node(n, g, eg, it)) for n in next_node_parents] for it in iterator_node_prepared_combinations]
         
